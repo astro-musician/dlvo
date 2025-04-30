@@ -1,0 +1,5 @@
+data/*
+modele_fit_tests.py
+compare_models.py
+chains.py
+chains.pkl
