@@ -10,6 +10,7 @@ import numpyro.distributions as dist
 from numpyro.infer import MCMC, NUTS
 from numpyro.infer.initialization import init_to_value
 import arviz as az
+import pandas
 import pickle
 from pathlib import Path
 

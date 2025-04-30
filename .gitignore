@@ -1,5 +1,7 @@
 data/*
+DLVO.py
 modele_fit_tests.py
 compare_models.py
+test.py
 chains.py
 chains.pkl
