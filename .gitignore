@@ -3,5 +3,6 @@ DLVO.py
 modele_fit_tests.py
 compare_models.py
 test.py
+test_cornerplot.pdf
 chains.py
 chains.pkl

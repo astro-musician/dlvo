@@ -10,7 +10,7 @@ import numpyro.distributions as dist
 from numpyro.infer import MCMC, NUTS
 from numpyro.infer.initialization import init_to_value
 import arviz as az
-import pandas
+from .cornerplot import cornerplot
 import pickle
 from pathlib import Path
 
@@ -40,9 +40,9 @@ class DLVO_parameters:
 
     def model(self):
 
-        alpha = numpyro.sample("alpha",dist.Uniform(low=0,high=1000))
-        k = numpyro.sample("k",dist.Uniform(low=0,high=1))
-        beta = numpyro.sample("beta",dist.Uniform(low=0,high=1000))
+        alpha = numpyro.sample(f"$\\alpha$",dist.Uniform(low=0,high=1000))
+        k = numpyro.sample(f"$k$",dist.Uniform(low=0,high=1))
+        beta = numpyro.sample(f"$\\beta$",dist.Uniform(low=0,high=1000))
 
         mock_model = dlvo_model(self.x,alpha,k,beta)
 
@@ -67,9 +67,9 @@ class DLVO_parameters:
     def setup_mcmc(self,num_warmup,num_samples):
 
         self.initial_guess = {
-                            'alpha':1,
-                            'beta':1,
-                            'k':0.01
+                            f'$\\alpha$':1,
+                            f'$\\beta$':1,
+                            f'$k$':0.01
                         }
 
         self.kernel = NUTS(self.model,init_strategy=init_to_value(values=self.initial_guess))
@@ -88,7 +88,7 @@ class DLVO_parameters:
 
         pass
 
-    def get_parameters(self):
+    def get_parameters(self,confidence_percentage=68):
         
         if Path(self.chainsfile).is_file() and not self.rerun:
 
@@ -101,17 +101,62 @@ class DLVO_parameters:
         dataset = az.convert_to_inference_data(self.chains)
         print(az.rhat(dataset))
         with az.style.context('arviz-darkgrid', after_reset=True):
+            plt.figure()
             az.plot_trace(dataset)
             plt.savefig(f'{self.datafile}_chains.pdf',dpi=800)
-            plt.close()
+            # plt.close()
 
-        self.chains_alpha = self.chains['alpha'].flatten()
-        self.chains_beta = self.chains['beta'].flatten()
-        self.chains_k = self.chains['k'].flatten()
+        self.chains_alpha = self.chains[f'$\\alpha$'].flatten()
+        self.chains_beta = self.chains[f'$\\beta$'].flatten()
+        self.chains_k = self.chains[f'$k$'].flatten()
 
         self.alpha = np.median(self.chains_alpha)
         self.beta = np.median(self.chains_beta)
         self.k = np.median(self.chains_k)
+
+        low_confidence = (100-confidence_percentage)/2
+        high_confidence = 100 - low_confidence
+
+        self.alpha_low = np.percentile(self.chains_alpha,low_confidence)
+        self.beta_low = np.percentile(self.chains_beta,low_confidence)
+        self.k_low = np.percentile(self.chains_k,low_confidence)
+
+        self.alpha_high = np.percentile(self.chains_alpha,high_confidence)
+        self.beta_high = np.percentile(self.chains_beta,high_confidence)
+        self.k_high = np.percentile(self.chains_k,high_confidence)
+
+        print(
+            f'----------------------\n'
+            f'alpha = {self.alpha:.2f} + {self.alpha_high-self.alpha:.2f} - {self.alpha-self.alpha_low:.2f} \n'
+            f'beta = {self.beta:.0f} + {self.beta_high-self.beta:.0f} - {self.beta-self.beta_low:.0f} \n'
+            f'k = {self.k:.5f} + {self.k_high-self.k:.5f} - {self.k-self.k_low:.5f} \n'
+            f'----------------------\n'
+        )
+
+        pass
+
+    def cornerplot(self):
+
+        plt.figure()
+        # cp = Cornerplots(
+        #     fields = ['alpha','beta','k'],
+        #     labels = [f'$\\alpha$',f'$\\beta$',f'$k$']
+        # )
+
+        # cp.plot(
+        #     {
+        #         'alpha':self.chains_alpha,
+        #         'beta':self.chains_beta,
+        #         'k':self.chains_k
+        #     },
+        #     'k. ',
+        #     ms=1
+        # )
+
+        cornerplot(self.chains_alpha,self.chains_beta,self.chains_k).plot(f'$\\alpha$',f'$\\beta$',f'$k$')
+
+        plt.savefig(f'{self.datafile}_cornerplot.pdf',dpi=800)
+        # plt.close()
 
         pass
 
@@ -138,6 +183,6 @@ class DLVO_parameters:
         ax.legend(fontsize=15)
 
         plt.savefig(f'{self.datafile}_compare_model.pdf',dpi=800)
-        plt.close()
+        # plt.close()
 
         pass
