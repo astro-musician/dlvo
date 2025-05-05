@@ -6,3 +6,6 @@ test.py
 test_cornerplot.pdf
 chains.py
 chains.pkl
+requirements_pip.txt
+requirements.txt
+DLVO.py
